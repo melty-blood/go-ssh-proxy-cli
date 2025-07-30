@@ -34,3 +34,9 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./kotori_proxy.exe -a -ldfla
 ### 小鸟(kotori) 镇楼
 ![./lovelive.jpg](./lovelive.jpg)
 
+
+------
+
+> 参考: <br/>
+> https://cobra.golang.ac.cn
+

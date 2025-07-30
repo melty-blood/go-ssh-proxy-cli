@@ -77,7 +77,7 @@ func RunNetTouch() *cobra.Command {
 	var flagVersion bool
 
 	var netTouchCmd = &cobra.Command{
-		Use:   "nettouch [must need flag]",
+		Use:   "nettouch [must need flag: --ip --port]",
 		Short: "network connect.",
 		Long:  "Tool to test whether the network is connectable.",
 		Args:  cobra.MinimumNArgs(0),
@@ -92,10 +92,14 @@ func RunNetTouch() *cobra.Command {
 		},
 	}
 
-	netTouchCmd.Flags().StringVarP(&flagIp, "ip", "i", "", "ip: 127.0.0.1")
-	netTouchCmd.Flags().StringVarP(&flagPort, "port", "p", "", "port: 6666")
+	netTouchCmd.Flags().StringVarP(&flagIp, "ip", "i", "", "ip: 127.0.0.1 (required)")
+	netTouchCmd.Flags().StringVarP(&flagPort, "port", "p", "", "port: 6666 (required)")
 	netTouchCmd.Flags().IntVarP(&flagTimeOut, "timeout", "t", 6, "Timeout after a few seconds")
 	netTouchCmd.Flags().BoolVarP(&flagVersion, "version", "v", false, "Show version info")
+
+	// must flag
+	netTouchCmd.MarkFlagRequired("ip")
+	netTouchCmd.MarkFlagRequired("port")
 
 	return netTouchCmd
 }
@@ -112,11 +116,13 @@ func RunACGPicFunc(conf *confopt.Config) {
 }
 
 func RunACGPic() *cobra.Command {
-	var flagTargetImg string
-	var flagSearchImgDir string
-	var flagThreshold int
-	var flagJson bool
-	var flagConfig string
+	var (
+		flagTargetImg    string
+		flagSearchImgDir string
+		flagThreshold    int
+		flagJson         bool
+		flagConfig       string
+	)
 
 	var acgPicCmd = &cobra.Command{
 		Use:   "acgpic [can use default flag]",
@@ -156,4 +162,25 @@ func RunACGPic() *cobra.Command {
 	acgPicCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
 
 	return acgPicCmd
+}
+
+func RunGrepPro() *cobra.Command {
+	var flagShowDir bool
+
+	var grepCmd = &cobra.Command{
+		Use:   "grep",
+		Short: "fast grep",
+		Long:  "Search for more files at the same time.",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				fmt.Println("need search param and dir!")
+				return
+			}
+			GrepPro(args[0], args[1], flagShowDir)
+		},
+	}
+
+	grepCmd.Flags().BoolVarP(&flagShowDir, "showdir", "s", false, "print find dir.")
+	return grepCmd
 }
