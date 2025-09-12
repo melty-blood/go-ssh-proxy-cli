@@ -337,7 +337,7 @@ func connTimeoutCancel(
 					exitChan <- "exit_channel hasActionChan close"
 					return
 				}
-				logp.PrintF("go func select received <-hasActionChan value: %s \n ", actionStr)
+				logp.PrintF("go func select received <-hasActionChan value: %s ", actionStr)
 				// 每次发送数据时间重新初始化
 				outInt = 0
 			default:
@@ -550,12 +550,11 @@ func startSSHCon(
 					readCancel()
 				}()
 
+				// 判断通道是否有关闭的
+				if !channelIsCloseAny(baseConnActionChan, listenHasActionChan, listenChan) || !channelIsCloseAny(localToRemoteChan) {
+					return
+				}
 				for {
-					// 判断通道是否有关闭的
-					if !channelIsCloseAny(baseConnActionChan, listenHasActionChan, listenChan) || !channelIsCloseAny(localToRemoteChan) {
-						return
-					}
-
 					buf := make([]byte, 65536)
 					n, err := localConn.Read(buf)
 					if err != nil && err != io.EOF {
@@ -577,7 +576,7 @@ func startSSHCon(
 							return
 						}
 						if len(listenHasActionChan) > 2 {
-							logp.PrintF("listenHasActionChan_baseConnActionChan continue stop add:", len(listenHasActionChan), len(baseConnActionChan))
+							logp.Print("listenHasActionChan_baseConnActionChan continue stop add:", len(listenHasActionChan), len(baseConnActionChan))
 							continue
 						}
 						actionChanStr = serverName + "_" + strconv.Itoa(n)
