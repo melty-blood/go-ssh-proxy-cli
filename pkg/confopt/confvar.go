@@ -10,8 +10,9 @@ type (
 		}
 
 		ServerConf struct {
-			SSHConf []*SSHConfig
-			Jump    *CommonJump
+			SignalOrderFilePath string
+			SSHConf             []*SSHConfig
+			Jump                *CommonJump
 		}
 
 		SockProxy struct {
@@ -23,20 +24,26 @@ type (
 			ServerUser     string
 			ServerPassword string
 			ServerPriKey   string
+			ServerPriPass  string `json:",optional"`
 			JumpHost       string `json:",optional"`
 			JumpUser       string `json:",optional"`
 			JumpPassword   string `json:",optional"`
 			JumpPriKey     string `json:",optional"`
+			JumpPriPass    string `json:",optional"`
 			Local          string
 			Proxy          string
 			SSHCommand     string `json:",optional"`
 		}
 
-		SockTOHttp struct {
+		SockToHttp struct {
 			ServerName string `json:",optional"`
 			SockAddr   string `json:",optional"`
-			TOHttp     string `json:",optional"`
+			ToHttp     string `json:",optional"`
 			OpenStatus bool   `json:",optional"`
+		}
+
+		Publish struct {
+			GitList []*PublishGitOpt
 		}
 	}
 	SSHConfig struct {
@@ -45,10 +52,12 @@ type (
 		ServerUser     string
 		ServerPassword string
 		ServerPriKey   string
+		ServerPriPass  string `json:",optional"`
 		JumpHost       string `json:",optional"`
 		JumpUser       string `json:",optional"`
 		JumpPassword   string `json:",optional"`
 		JumpPriKey     string `json:",optional"`
+		JumpPriPass    string `json:",optional"`
 		Local          string
 		Proxy          string
 		OpenStatus     bool
@@ -61,5 +70,34 @@ type (
 		JumpUser     string `json:",optional"`
 		JumpPassword string `json:",optional"`
 		JumpPriKey   string `json:",optional"`
+		JumpPriPass  string `json:",optional"`
+	}
+
+	PublishGitOpt struct {
+		KeyName              string
+		RepoUrl              string
+		ClonePath            string
+		TargzPath            string
+		TargzIsNeedTopDir    bool
+		CheckBranch          string
+		RemoteName           string
+		RemoteBranch         string
+		SSHGitUser           string `json:",optional"`
+		SSHGitIdentityFile   string `json:",optional"`
+		SSHGitIdentityPasswd string `json:",optional"`
+		HttpsGitUser         string `json:",optional"`
+		HttpsGitPat          string `json:",optional"`
+		EnvList              []PublishGitEnvList
+		SelectEnv            string `json:",optional"`
+		SftpUploadPath       string
+		SSHHost              string
+		SSHPort              string
+		SSHUser              string
+		SSHPasswd            string
+		SSHCmd               []string
+	}
+
+	PublishGitEnvList struct {
+		EnvNum, EnvPath string
 	}
 )

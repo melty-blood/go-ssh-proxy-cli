@@ -11,6 +11,16 @@ import (
 )
 
 func NetCanTouch(opt *NetTouchOpt) {
+	// ip := flag.String("ip", "", "target ip")
+	// port := flag.String("port", "", "target port")
+	// timeOut := flag.Int("timeout", 6, "timeout")
+	// showVersion := flag.Bool("version", false, "Display the version")
+	// showV := flag.Bool("V", false, "Shorthand for --version")
+
+	// 解析命令行参数
+	// flag.CommandLine.Parse(os.Args[2:])
+	// fmt.Println("os.Args[2:]", os.Args[2:])
+
 	// 检查是否显示了版本信息
 	if opt.ShowVersion || opt.ShowV {
 		fmt.Println("Power by Type-Moon LoveLive IDOLM@STER! -- 6.66")
