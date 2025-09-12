@@ -7,6 +7,7 @@ import (
 	"kotori/pkg/helpers"
 	"kotori/pkg/network"
 	"kotori/pkg/proxysock"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -183,4 +184,54 @@ func RunGrepPro() *cobra.Command {
 
 	grepCmd.Flags().BoolVarP(&flagShowDir, "showdir", "s", false, "print find dir.")
 	return grepCmd
+}
+
+func RunPublishGit() *cobra.Command {
+	var (
+		fastOrderStr string
+		flagConfig   string
+	)
+
+	var publishCmd = &cobra.Command{
+		Use:   "publish",
+		Short: "publish code to server",
+		Long:  "After cloning or pulling the code from git, publish it to the server.",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			conf := confopt.ReadConf(flagConfig)
+
+			var (
+				err         error
+				gitInfoConf *confopt.PublishGitOpt
+			)
+			if len(fastOrderStr) > 0 {
+				fastOrderArr := strings.Split(fastOrderStr, ",")
+				if len(fastOrderArr) < 2 {
+					fmt.Println("Error fast order failed: must 'KeyName,envNum'")
+					return
+				}
+				fastOrder := &PublishFastOrder{
+					GitKey: fastOrderArr[0],
+					GitEnv: fastOrderArr[1],
+				}
+				gitInfoConf, err = PublishFastOrderGit(fastOrder, conf)
+			} else {
+				gitInfoConf, err = PublishInteractionGit(conf)
+			}
+			if err != nil {
+				fmt.Println("publish err: ", err)
+				return
+			}
+
+			err = PublishSSH(gitInfoConf)
+			if err != nil {
+				fmt.Println("PublishSSH err: ", err)
+			}
+		},
+	}
+
+	publishCmd.Flags().StringVarP(&fastOrderStr, "fast-order", "o", "", "fast select git and env")
+	publishCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
+
+	return publishCmd
 }

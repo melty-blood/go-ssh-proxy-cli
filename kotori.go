@@ -14,6 +14,7 @@ func main() {
 	netTouchCmd := svc.RunNetTouch()
 	acgPicCmd := svc.RunACGPic()
 	grepCmd := svc.RunGrepPro()
+	publishCmd := svc.RunPublishGit()
 
 	var rootCmd = &cobra.Command{
 		Use: "kotori_proxy",
@@ -29,6 +30,6 @@ func main() {
 	}
 	rootCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
 	rootCmd.Flags().BoolVarP(&completion, "completion", "c", false, "Generate completion script")
-	rootCmd.AddCommand(sshProxyCmd, netTouchCmd, acgPicCmd, grepCmd)
+	rootCmd.AddCommand(sshProxyCmd, netTouchCmd, acgPicCmd, grepCmd, publishCmd)
 	rootCmd.Execute()
 }
