@@ -214,7 +214,7 @@ func connTimeoutCancel(
 					exitChan <- "exit_channel hasActionChan close"
 					return
 				}
-				logp.PrintF("go func select received <-hasActionChan value: %s ", actionStr)
+				logp.PrintF("go func select received <-hasActionChan value: %s \n ", actionStr)
 				// 每次发送数据时间重新初始化
 				outInt = 0
 			default:
