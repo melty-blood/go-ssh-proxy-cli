@@ -7,6 +7,7 @@ import (
 	"kotori/pkg/helpers"
 	"kotori/pkg/network"
 	"kotori/pkg/proxysock"
+	"log"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -37,7 +38,6 @@ func RunSSHProxyFunc(conf *confopt.Config) {
 func RunSSHProxy() *cobra.Command {
 	var flagJson bool
 	var flagWhat bool
-	var flagConfig string
 
 	var sshProxyCmd = &cobra.Command{
 		Use:   "sshproxy [string to print!!]",
@@ -45,9 +45,16 @@ func RunSSHProxy() *cobra.Command {
 		Long:  "The tool can achieve something like 'ssh-NL 20022:IP_ADDR: 22-J TypeMoon satsuki@SERVER_IP -p 8606'.",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
+			// 动态获取参数
 			// tempFlag := cmd.Flag("json")
-			// fmt.Println("cmd.Flag-- json ", tempFlag.Value)
-			conf := confopt.ReadConf(flagConfig)
+			// fmt.Println("cmd.Flag --json ", tempFlag.Value)
+
+			confPath, err := cmd.Flags().GetString("config")
+			if err != nil {
+				log.Fatalln("ssh proxy get conf fail:", err)
+			}
+
+			conf := confopt.ReadConf(confPath)
 			if flagWhat {
 				fmt.Println("this flag is run `ssh -NL`, args from config.yaml")
 				return
@@ -62,7 +69,6 @@ func RunSSHProxy() *cobra.Command {
 
 	sshProxyCmd.Flags().BoolVarP(&flagJson, "json", "j", false, "print config with json")
 	sshProxyCmd.Flags().BoolVarP(&flagWhat, "what", "w", false, "ssh proxy 'ssh -NL' command")
-	sshProxyCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
 
 	return sshProxyCmd
 }
@@ -122,7 +128,6 @@ func RunACGPic() *cobra.Command {
 		flagSearchImgDir string
 		flagThreshold    int
 		flagJson         bool
-		flagConfig       string
 	)
 
 	var acgPicCmd = &cobra.Command{
@@ -131,7 +136,12 @@ func RunACGPic() *cobra.Command {
 		Long:  "Search for similar images in the specified directory.",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := confopt.ReadConf(flagConfig)
+			confPath, err := cmd.Flags().GetString("config")
+			if err != nil {
+				log.Fatalln("ssh proxy get conf fail:", err)
+			}
+
+			conf := confopt.ReadConf(confPath)
 			if flagJson {
 				confopt.PrintConfJson(conf)
 				return
@@ -160,7 +170,6 @@ func RunACGPic() *cobra.Command {
 	acgPicCmd.Flags().StringVarP(&flagSearchImgDir, "search-img-dir", "s", "", "search image directory")
 	acgPicCmd.Flags().IntVarP(&flagThreshold, "threshold", "T", 0, "threshold value, this is the similarity of the pictures")
 	acgPicCmd.Flags().BoolVarP(&flagJson, "json", "j", false, "print config with json")
-	acgPicCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
 
 	return acgPicCmd
 }
@@ -189,7 +198,6 @@ func RunGrepPro() *cobra.Command {
 func RunPublishGit() *cobra.Command {
 	var (
 		fastOrderStr string
-		flagConfig   string
 	)
 
 	var publishCmd = &cobra.Command{
@@ -198,12 +206,16 @@ func RunPublishGit() *cobra.Command {
 		Long:  "After cloning or pulling the code from git, publish it to the server.",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := confopt.ReadConf(flagConfig)
-
 			var (
 				err         error
 				gitInfoConf *confopt.PublishGitOpt
 			)
+			confPath, err := cmd.Flags().GetString("config")
+			if err != nil {
+				log.Fatalln("ssh proxy get conf fail:", err)
+			}
+
+			conf := confopt.ReadConf(confPath)
 			if len(fastOrderStr) > 0 {
 				fastOrderArr := strings.Split(fastOrderStr, ",")
 				if len(fastOrderArr) < 2 {
@@ -231,7 +243,5 @@ func RunPublishGit() *cobra.Command {
 	}
 
 	publishCmd.Flags().StringVarP(&fastOrderStr, "fast-order", "o", "", "fast select git and env")
-	publishCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
-
 	return publishCmd
 }

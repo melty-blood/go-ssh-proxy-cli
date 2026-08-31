@@ -2,14 +2,19 @@ package main
 
 import (
 	"kotori/internal/svc"
+	"kotori/pkg/confopt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
 func main() {
-	var flagConfig string
-	var completion bool
+	var (
+		flagConfig string
+		completion bool
+		err        error
+	)
 	sshProxyCmd := svc.RunSSHProxy()
 	netTouchCmd := svc.RunNetTouch()
 	acgPicCmd := svc.RunACGPic()
@@ -28,7 +33,16 @@ func main() {
 			svc.CommandRoute(flagConfig)
 		},
 	}
-	rootCmd.Flags().StringVarP(&flagConfig, "config", "f", "./conf/conf.yaml", "configure file, default file path ./conf/config.yaml")
+
+	// ./conf/conf.yaml
+	rootCmd.PersistentFlags().StringVarP(&flagConfig, "config", "f", "", "configure file, default file path {APP_PATH}/conf/config.yaml")
+	if flagConfig == "" {
+		flagConfig, err = confopt.GetConfDir()
+		if err != nil {
+			log.Fatalln("get conf dir fail, err:", err)
+		}
+	}
+
 	rootCmd.Flags().BoolVarP(&completion, "completion", "c", false, "Generate completion script")
 	rootCmd.AddCommand(sshProxyCmd, netTouchCmd, acgPicCmd, grepCmd, publishCmd)
 	rootCmd.Execute()
