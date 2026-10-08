@@ -188,28 +188,49 @@ func RunSSHSock5(ctx context.Context, conf *confopt.Config, onlineChan chan stri
 	}
 
 	logp.Print("-> dialing ssh start:", server)
-	sshClient, err := ssh.Dial("tcp", server, sshConf)
+	// 使用带 TCP 保活的 net.Dialer 替代默认拨号（解决底层 15 分钟 NAT/防火墙超时假死）
+	dialer := &net.Dialer{
+		Timeout:   20 * time.Second,
+		KeepAlive: 15 * time.Second, // 操作系统内核每 15 秒发送一次 TCP 保活包
+	}
+
+	var err error
+	tcpConn, err := dialer.DialContext(ctx, "tcp", server)
+	if err != nil {
+		onlineChan <- "RestartSSHSockProxy"
+		logp.Print("connect tcp.Dial fail:", err)
+		return errors.New("RunSSHSock5: tcp dial failed:" + err.Error())
+	}
+
+	// 将底层 TCP 连接包装为 SSH 连接
+	conn, chans, reqs, err := ssh.NewClientConn(tcpConn, server, sshConf)
+	if err != nil {
+		tcpConn.Close()
+		onlineChan <- "RestartSSHSockProxy"
+		logp.Print("connect ssh.NewClientConn fail:", err)
+		return errors.New("RunSSHSock5: ssh client conn failed:" + err.Error())
+	}
+	sshClient := ssh.NewClient(conn, chans, reqs)
 	defer func() {
+		sshClient.Close()
 		if err != nil {
 			onlineChan <- "RestartSSHSockProxy"
 			logp.Print("connect ssh.Dial fail:", err)
 		}
-	}()
-	if err != nil {
-		return errors.New("RunSSHSock5: ssh dial failed:" + err.Error())
-	}
-	defer sshClient.Close()
-	logp.Print("ssh connection success to", server)
 
-	// optional keepalive
-	if keepAlive > 0 {
-		go keepAliveSendReq(sshClient, keepAlive)
-	}
+	}()
+	logp.Print("ssh connection success to", server)
 
 	ln, err := net.Listen("tcp", listenLocal)
 	if err != nil {
 		return errors.New("RunSSHSock5: listen: " + listenLocal + " | err: " + err.Error())
 	}
+	defer ln.Close()
+
+	if keepAlive > 0 {
+		go keepAliveSendReq(ctx, sshClient, ln, keepAlive)
+	}
+
 	logp.PrintF("SOCKS5 listening on %s (forward via %s) \n", listenLocal, server)
 	go func() {
 		time.Sleep(time.Second)
@@ -241,36 +262,27 @@ func sock5Cancel(ctx context.Context, listen net.Listener, sshClient *ssh.Client
 	}
 }
 
-func keepAliveSendReq(sshClient *ssh.Client, keepAlive int) {
-	var (
-		sendOk      bool
-		sendResByte []byte
-		err         error
-		logp        = NewPrintLog("keepAliveSendReq", "")
-	)
-	req := struct {
-		Addr    string
-		Port    uint32
-		Payload string
-	}{
-		"127.0.0.1",
-		uint32(0),
-		"kotori",
-	}
-	var reply struct {
-		SomeField uint32
-	}
-	timeSecond := time.Duration(keepAlive) * time.Second
-	time.Sleep(time.Second)
+func keepAliveSendReq(ctx context.Context, sshClient *ssh.Client, listen net.Listener, keepAlive int) {
+	logp := NewPrintLog("keepAliveSendReq", "")
+	ticker := time.NewTicker(time.Duration(keepAlive) * time.Second)
+	defer ticker.Stop()
+
 	for {
-		sendOk, sendResByte, err = sshClient.SendRequest("tcpip-forward", true, ssh.Marshal(&req))
-		if err != nil {
-			logp.Print("->Error:RunSSHSock5: sshClient.SendRequest:", sendOk, " | ", sendResByte, reply, " | ", err)
-			logp.Print("->Error:keepalive failed:", err)
+		select {
+		case <-ctx.Done():
+			logp.Print("get ctx cancel(), keepAliveSendReq exit")
 			return
+		case <-ticker.C:
+			// 发送标准的 OpenSSH 保活请求，取代错误的 tcpip-forward
+			_, keepByte, err := sshClient.SendRequest("keepalive@openssh.com", true, nil)
+			logp.Print("SendRequest:", string(keepByte), "| len:", len(keepByte))
+			if err != nil {
+				logp.Print("->Error: keepalive failed, closing connection:", err)
+				// 保活失败时主动关闭连接与监听，释放 Accept 阻塞，让 RunSSHSock5 退出以触发重新连接
+				sshClient.Close()
+				listen.Close()
+				return
+			}
 		}
-		// err = ssh.Unmarshal(sendResByte, &reply)
-		// logp.Print("->sendResByte and err:", reply, err)
-		time.Sleep(timeSecond)
 	}
 }

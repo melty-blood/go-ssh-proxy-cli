@@ -102,7 +102,7 @@ func RunSockToHttp(conf *confopt.Config) {
 				sockMap[conf.SockToHttp.ServerName].ctxCancel()
 
 				go func() {
-					time.Sleep(time.Second * 6)
+					time.Sleep(time.Second * 2)
 					onlineChan <- "RestartSSHSockProxy"
 				}()
 			}
